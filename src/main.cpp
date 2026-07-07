@@ -1,35 +1,47 @@
 #include <iostream>
 #include <stdexcept>
 #include "parser.hpp"
-#include "board.hpp"
+#include "game_engine.hpp"
 
 int main() {
     try {
-        // 1. קריאה ופענוח של כל הקלט
+        // 1. קריאה ופענוח של כל הקלט (מהקונסול או מקובץ הבדיקה של ה-VPL)
         ParsedInput gameData = Parser::parseStream(std::cin);
 
-        // הלוח חולץ בהצלחה ונמצא בתוך gameData.board
-        Board currentBoard = gameData.board;
+        // 2. אתחול מנוע המשחק עם הלוח שהתקבל
+        GameEngine engine(gameData.board);
 
-        // 2. לולאת הפקודות (Command Loop)
-        for (const std::string& command : gameData.commands) {
+        // 3. לולאת הפקודות (Command Loop)
+        for (const GameCommand& cmd : gameData.commands) {
 
-            if (command == "print board") {
-                // המטלה באיטרציה הראשונה
-                std::cout << currentBoard.toCanonicalString();
+            // ניתוב הפקודה לפונקציה המתאימה במנוע
+            switch (cmd.type) {
+            case CommandType::CLICK:
+                // arg1 = x, arg2 = y
+                engine.handleClick(cmd.arg1, cmd.arg2);
+                break;
+
+            case CommandType::WAIT:
+                // arg1 = ms
+                engine.wait(cmd.arg1);
+                break;
+
+            case CommandType::PRINT_BOARD:
+                engine.printSettledBoard();
+                break;
+
+            case CommandType::UNKNOWN:
+                // פקודה משובשת או לא מוכרת - מתעלמים בבטחה
+                break;
             }
-            else if (command == "move wK e4") {
-                // דוגמה להמחשה בלבד לאיטרציות הבאות!
-                // currentBoard.place(4, 4, ...); 
-            }
-            // אפשר להוסיף כאן עוד פקודות בקלות...
         }
     }
-    // 3. טיפול בשגיאות מה-Parser (לפי דרישות ה-VPL)
+    // 4. טיפול בשגיאות קריטיות של שלב האתחול (כמו חריגה ברוחב או טוקן לא חוקי)
     catch (const std::exception& e) {
         std::cout << e.what() << '\n';
+        // החזרת קוד שגיאה למערכת ההפעלה
         return 1;
     }
 
-    return 0;
+    return 0; // סיום תקין
 }

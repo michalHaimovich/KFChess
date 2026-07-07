@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_library(kungfu_chess_core 
     src/board.cpp 
     # בהמשך נוסיף לכאן גם את src/parser.cpp
-)
+  "src/pieces.cpp")
 
 # כל מי שישתמש בספרייה הזו יקבל גישה אוטומטית לתיקיית include
 target_include_directories(kungfu_chess_core PUBLIC include)
@@ -21,7 +21,7 @@ target_include_directories(kungfu_chess_core PUBLIC include)
 # ==========================================
 # שלב ב': קובץ ההרצה הראשי (Main App)
 # ==========================================
-add_executable(kungfu_chess_app src/main.cpp)
+add_executable(kungfu_chess_app src/main.cpp "src/game_engine.cpp" "tests/game_engine_tests.cpp" "src/pieces.cpp")
 # מחברים את ספריית הליבה לקובץ הראשי
 target_link_libraries(kungfu_chess_app PRIVATE kungfu_chess_core)
 
@@ -49,7 +49,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # יצירת קובץ הרצה ייעודי רק עבור הטסטים
-add_executable(kungfu_chess_tests tests/board_tests.cpp)
+add_executable(kungfu_chess_tests tests/board_tests.cpp src/game_engine.cpp tests/game_engine_tests.cpp "src/pieces.cpp")
 
 # מחברים לטסטים גם את הלוגיקה שלנו (kungfu_chess_core) וגם את GTest
 target_link_libraries(kungfu_chess_tests 

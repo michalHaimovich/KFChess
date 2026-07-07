@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "board.hpp"
 
+
 // טסט 1: אתחול ומידות
 TEST(BoardTest, InitializationAndDimensions) {
     Board board(8, 8); // לוח שחמט סטנדרטי

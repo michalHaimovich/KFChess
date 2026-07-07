@@ -90,48 +90,50 @@ GameCommand Parser::parseCommandString(const std::string& line) {
     return cmd;
 }
 
-// 5. מכונת המצבים הראשית של ה-Parser
+// 5. מכונת המצבים הראשית של ה
 ParsedInput Parser::parseStream(std::istream& input) {
     enum State { WAITING_FOR_BOARD, READING_BOARD, READING_COMMANDS };
     State currentState = WAITING_FOR_BOARD;
 
     std::vector<std::vector<Board::Square>> tempRows;
-    std::vector<GameCommand> commands; // שונה למערך של GameCommand!
+    std::vector<GameCommand> commands;
     size_t expectedWidth = 0;
 
     std::string line;
 
     while (std::getline(input, line)) {
+        // ניקוי תווים נסתרים של Windows
         if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
 
-        if (line.empty()) continue;
+        // פירוק השורה לטוקנים מעיף לנו אוטומטית את כל הרווחים!
+        std::vector<std::string> tokens = splitLine(line);
+        if (tokens.empty()) continue; // מדלג על שורות ריקות או שורות של רווחים בלבד
 
         switch (currentState) {
         case WAITING_FOR_BOARD:
-            if (line == "Board:") {
+            // עכשיו אנחנו בודקים רק את המילה הראשונה, בלי רווחים
+            if (tokens[0] == "Board:") {
                 currentState = READING_BOARD;
             }
             break;
 
         case READING_BOARD:
-            if (line == "Commands:") {
+            if (tokens[0] == "Commands:") {
                 currentState = READING_COMMANDS;
                 break;
             }
 
+            // ולידציה של הלוח
+            if (tempRows.empty()) {
+                expectedWidth = tokens.size();
+            }
+            else if (tokens.size() != expectedWidth) {
+                throw std::runtime_error("ERROR ROW_WIDTH_MISMATCH");
+            }
+
             {
-                std::vector<std::string> tokens = splitLine(line);
-                if (tokens.empty()) break;
-
-                if (tempRows.empty()) {
-                    expectedWidth = tokens.size();
-                }
-                else if (tokens.size() != expectedWidth) {
-                    throw std::runtime_error("ERROR ROW_WIDTH_MISMATCH");
-                }
-
                 std::vector<Board::Square> currentRow;
                 for (const std::string& token : tokens) {
                     if (!isValidToken(token)) {
@@ -144,7 +146,6 @@ ParsedInput Parser::parseStream(std::istream& input) {
             break;
 
         case READING_COMMANDS:
-            // ה-Parser מפענח את הפקודה ישירות ושומר אובייקט נקי ומובנה
             commands.push_back(parseCommandString(line));
             break;
         }

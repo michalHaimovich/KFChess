@@ -1,4 +1,5 @@
 #include "game_engine.hpp"
+#include "pieces.hpp"
 
 // אתחול המנוע: הלוח מועתק, הזמן מאופס, והבחירה מתחילה כריקה (nullopt)
 GameEngine::GameEngine(const Board& initialBoard)
@@ -13,11 +14,9 @@ bool GameEngine::isSameColor(Board::Square p1, Board::Square p2) const {
 }
 
 void GameEngine::handleClick(int pixelX, int pixelY) {
-    // 1. תרגום מפיקסלים למשבצות מטריצה (חלוקה בשלמים)
     int targetX = pixelX / 100;
     int targetY = pixelY / 100;
 
-    // 2. תנאי שומר (Guard Clause) - התעלמות מקליק מחוץ ללוח (Test 3)
     if (targetX < 0 || targetX >= board.getWidth() ||
         targetY < 0 || targetY >= board.getHeight()) {
         return;
@@ -25,37 +24,36 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
 
     Board::Square targetSquare = board.at(targetX, targetY);
 
-    // 3. מכונת המצבים של הבחירה
     if (!selectedSquare.has_value()) {
-        // --- מצב א': אין כלי בחור ---
-
         if (targetSquare.type != '\0') {
-            // קליק על כלי חוקי מעביר אותנו למצב "בחור" (Test 1)
             selectedSquare = { targetX, targetY };
         }
-        // אם המשבצת ריקה, מתעלמים ולא עושים כלום (Test 2)
-
     }
     else {
-        // --- מצב ב': כבר יש כלי בחור מקודם ---
-
         int startX = selectedSquare->first;
         int startY = selectedSquare->second;
         Board::Square selectedPiece = board.at(startX, startY);
 
         if (targetSquare.type != '\0' && isSameColor(selectedPiece, targetSquare)) {
-            // קליק על כלי מאותו צבע - מחליף את הבחירה אליו (Test 4)
-            selectedSquare = { targetX, targetY };
+            selectedSquare = { targetX, targetY }; // החלפת בחירה
         }
         else {
-            // קליק על משבצת ריקה או אויב - ביצוע תנועה (Move Request)
+            // הסטייט: ניסיון תנועה ליעד (ריק או אויב)
 
-            // מבצעים את התנועה בזיכרון של הלוח
-            board.place(targetX, targetY, selectedPiece);
-            // מנקים את משבצת המקור (מחזירים אותה להיות נקודה)
-            board.place(startX, startY, { '.', '\0' });
+            // 1. מבקשים מהמפעל את מחלקת ה-OOP של הכלי הספציפי
+            const Piece* pieceRule = PieceFactory::getPiece(selectedPiece.type);
 
-            // מאפסים את הסטייט חזרה למצב שבו "אין בחירה"
+            // 2. שואלים את המחלקה אם הפעולה הגיונית (פולימורפיזם בפעולה)
+            if (pieceRule != nullptr &&
+                pieceRule->isValidMove(startX, startY, targetX, targetY, board)) {
+
+                // התנועה חוקית מתמטית! מתקנים את הזיכרון של הלוח
+                board.place(targetX, targetY, selectedPiece);
+                board.place(startX, startY, { '.', '\0' });
+            }
+
+            // לפי הדרישות: גם אם המהלך תקין וגם אם הוא לא חוקי,
+            // המהלך מסתיים (הבחירה מתבטלת).
             selectedSquare = std::nullopt;
         }
     }
