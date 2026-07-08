@@ -51,6 +51,10 @@ private:
     uint64_t calculateArrival(int startX, int startY, int destX, int destY) const;
 
 public:
+
+    // חשוף רק לצורכי קריאה (טסטים)
+    const Board& getBoard() const { return board; }
+
     explicit GameEngine(const Board& initialBoard, const EngineConfig& cfg = EngineConfig());
 
     void handleClick(int pixelX, int pixelY);

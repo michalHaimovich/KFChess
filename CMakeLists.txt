@@ -13,7 +13,7 @@ add_library(kungfu_chess_core
     src/pieces.cpp
     src/game_engine.cpp
     src/parser.cpp
- "tests/Pieces.cpp")
+ "tests/Pieces_tests.cpp" "tests/game_engine_tests.cpp")
 
 # מגדירים איפה נמצאים קבצי ה-hpp
 target_include_directories(kungfu_chess_core PUBLIC include)
@@ -22,7 +22,7 @@ target_include_directories(kungfu_chess_core PUBLIC include)
 # Phase B: Main executable (Main App)
 # ==========================================
 # קובץ ההרצה של המשחק. מכיל אך ורק את main.cpp
-add_executable(kungfu_chess_app src/main.cpp "tests/parser_tests.cpp" "tests/Pieces.cpp")
+add_executable(kungfu_chess_app src/main.cpp "tests/parser_tests.cpp" "tests/Pieces_tests.cpp" "tests/game_engine_tests.cpp")
 
 # מחברים אליו את הלוגיקה
 target_link_libraries(kungfu_chess_app PRIVATE kungfu_chess_core)
@@ -35,7 +35,7 @@ add_executable(kungfu_chess_tests
     tests/test_main.cpp 
     tests/board_tests.cpp
     tests/parser_tests.cpp
- "tests/Pieces.cpp")
+ "tests/Pieces_tests.cpp" "tests/game_engine_tests.cpp")
 
 # מחברים אליו את הלוגיקה
 target_link_libraries(kungfu_chess_tests PRIVATE kungfu_chess_core)
