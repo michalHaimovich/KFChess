@@ -5,8 +5,7 @@
 #include <vector>
 #include "board.hpp"
 
-// מגדיר את סוגי הפקודות שהמערכת שלנו מכירה
-
+// Defines the types of commands that the system recognizes
 enum class CommandType {
     CLICK,
     WAIT,
@@ -15,14 +14,14 @@ enum class CommandType {
     JUMP
 };
 
-// מבנה נתונים שמייצג פקודה מוכנה לפעולה (אחרי שחולצה מהטקסט)
+// Data structure representing a command ready for action (after extracted from text)
 struct GameCommand {
     CommandType type;
-    int arg1 = 0; // ישמש כ-X בקליק, או כזמן ב-Wait
-    int arg2 = 0; // ישמש כ-Y בקליק
+    int arg1 = 0; // Will serve as X in click, or time in wait
+    int arg2 = 0; // Will serve as Y in click
 };
 
-// עכשיו ה-Parser מחזיר רשימה של אובייקטי פקודה, ולא סתם מחרוזות
+// The parser now returns a list of command objects, not just strings
 struct ParsedInput {
     Board board;
     std::vector<GameCommand> commands;
@@ -37,6 +36,6 @@ private:
     static Board::Square parseToken(const std::string& token);
     static std::vector<std::string> splitLine(const std::string& line);
 
-    // פונקציית עזר חדשה שממירה שורת טקסט לאובייקט GameCommand
-    static GameCommand parseCommandString(const std::string& line);
+    // Helper function that converts a text line to a GameCommand object
+  static GameCommand parseCommandString(const std::string& line);
 };

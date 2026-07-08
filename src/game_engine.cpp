@@ -58,7 +58,7 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
         }
         Board::Square selectedPiece = board.at(startX, startY);
 
-        // הגנה: אי אפשר להתחיל תנועה חדשה אם הכלי כרגע קופץ באוויר!
+        // Guard: cannot start a new move if the piece is currently jumping!
         if (jumpExpiration[startY][startX] > currentTimeMs) {
             selectedSquare = std::nullopt;
             return;
@@ -74,12 +74,12 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
                 pieceRule->isValidMove(startX, startY, targetX, targetY, board)) {
 
                 std::vector<std::pair<int, int>> movePath;
-                // ... (קוד חישוב המסלול שלך נשאר זהה) ...
+                // ... (path calculation code remains the same) ...
 
                 bool pathBlocked = false;
                 for (const auto& p : movePath) {
-                    // --- שינוי קריטי: היעד אינו נבדק כחסום ואינו ננעל! ---
-                    // זה מאפשר לשני כלים לנסות לנחות באותו מקום, או לכלי המותקף להגן על עצמו
+                    // --- Critical change: destination is not checked as blocked and not locked! ---
+                    // This allows two pieces to try landing at the same place, or attacked piece to defend itself
                     if (p.first != targetX || p.second != targetY) {
                         if (isSquareLocked(p.first, p.second)) {
                             pathBlocked = true;
@@ -90,7 +90,7 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
 
                 if (!pathBlocked) {
                     for (const auto& p : movePath) {
-                        // נועלים רק את הדרך, לא את היעד הסופי!
+                        // Lock only the path, not the final destination!
                         if (p.first != targetX || p.second != targetY) {
                             lockedSquares[p.second][p.first] = true;
                         }
@@ -100,12 +100,12 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
                         startX, startY, targetX, targetY,
                         calculateArrival(startX, startY, targetX, targetY),
                         selectedPiece,
-                        movePath // שומרים את המסלול כדי לדעת מה לשחרר ב-wait
+                        movePath // Save the path to know what to release in wait
                     });
                 }
             }
 
-            // איפוס הבחירה בסוף התהליך
+            // Reset selection at end of process
             selectedSquare = std::nullopt;
         }
     }
@@ -123,17 +123,17 @@ void GameEngine::handleJump(int pixelX, int pixelY) {
 
     Board::Square piece = board.at(targetX, targetY);
 
-    // אי אפשר לקפוץ אם אין שם כלי, או אם המשבצת נעולה (הכלי יצא לדרך)
+    // Cannot jump if there's no piece there, or if the square is locked (piece has left)
     if (piece.type == '\0' || isSquareLocked(targetX, targetY)) {
         return;
     }
 
-    // אם הכלי לא קופץ כרגע, נפעיל לו קפיצה ל-1000 מילישניות
+    // If the piece is not jumping right now, activate jump for 1000 milliseconds
     if (jumpExpiration[targetY][targetX] <= currentTimeMs) {
         jumpExpiration[targetY][targetX] = currentTimeMs + config.jumpDurationMs;
     }
 
-    // אם הכלי שקפץ היה מסומן, נבטל את הסימון (כמו ב-click)
+    // If the jumped piece was selected, cancel the selection (like in click)
     selectedSquare = std::nullopt;
 }
 
@@ -144,32 +144,32 @@ void GameEngine::wait(uint64_t ms) {
         PendingMove move = pendingQueue.top();
         pendingQueue.pop();
 
-        // נבדוק מה יש ביעד
+        // Check what's at the destination
         Board::Square targetSquare = board.at(move.destX, move.destY);
         bool targetIsEnemy = (targetSquare.type != '\0' && targetSquare.color != move.piece.color);
 
         if (targetIsEnemy && jumpExpiration[move.destY][move.destX] >= move.arrivalTime) {
-            // התוקף נפל למלכודת! הכלי שבאוויר אוכל אותו.
+            // The attacker fell into a trap! The airborne piece eats it.
 
-            // אם התוקף שהושמד הוא במקרה המלך (יצא להתקפה ומת), המשחק נגמר!
+            // If the destroyed attacker happens to be the king (attacked and died), game over!
             if (PieceFactory::getPiece(move.piece.type)->isVital()) {
                 isGameOver = true;
             }
 
-            // מוחקים את התוקף ממשבצת המקור שלו (הוא לא נוחת ביעד)
+            // Delete the attacker from its source square (it doesn't land at destination)
             board.place(move.startX, move.startY, { '.', '\0' });
         }
         else {
-            // נחיתה רגילה (אין קפיצה, או שהקפיצה הסתיימה)
+            // Normal landing (no jump, or jump finished)
 
-            // אחרי שהנחתנו את הכלי על הלוח ב-wait:
+            // After landing the piece on the board in wait:
             board.place(move.destX, move.destY, move.piece);
             board.place(move.startX, move.startY, { '.', '\0' });
 
-            // אומרים לכלי: "נחתת! תעשה מה שאתה אמור לעשות"
+            // Tell the piece: "You landed! Do what you're supposed to do"
             PieceFactory::getPiece(move.piece.type)->onLanding(board, move.destX, move.destY, move.piece.color);
 
-            // בדיקת Game Over (אם דרסנו מלך נייח)
+            // Game Over check (if we crushed a static king)
 
             if (targetSquare.type != '\0' && PieceFactory::getPiece(targetSquare.type)->isVital()) {
                 isGameOver = true;
@@ -177,7 +177,7 @@ void GameEngine::wait(uint64_t ms) {
 
         }
 
-        // שחרור הנעילות לאורך המסלול (נשאר זהה)
+        // Release locks along the path (remains the same)
         for (const auto& p : move.path) {
             if (p.first != move.destX || p.second != move.destY) {
                 lockedSquares[p.second][p.first] = false;

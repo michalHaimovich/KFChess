@@ -1,49 +1,49 @@
-#pragma once // מונע ייבוא כפול של הקובץ בתהליך הקימפול
+#pragma once 
 
 #include <vector>
 #include <string>
-#include <stdexcept> // בשביל חריגות כמו std::out_of_range
+#include <stdexcept> // For exceptions like std::out_of_range
 
 class Board {
 public:
-    // הגדרת המבנה הפנימי של משבצת
+    // Definition of the internal structure of a square
     struct Square {
         char color; // 'w', 'b', or '.'
         char type;  // 'K', 'Q', 'R', etc.
 
-        // פונקציית עזר להמרת המשבצת למחרוזת (לפי דרישות ה-VPL)
+        // Helper function to convert square to string (according to VPL requirements)
         std::string toString() const {
             if (color == '.') return ".";
             return std::string(1, color) + std::string(1, type);
         }
     };
 
-    // בנאי: מקבל מידות ומאתחל לוח ריק
+    // Constructor: receives dimensions and initializes empty board
     Board(size_t width, size_t height);
 
-    // פונקציות גישה (Getters)
+    // Accessor functions (Getters)
     size_t getWidth() const;
     size_t getHeight() const;
 
-    // קריאת משבצת ממיקום ספציפי (בטוחה מפני חריגת גבולות)
+    // Read a square from specific position (safe from boundary violations)
     Square at(size_t x, size_t y) const;
 
-    // הצבת משבצת/כלי במיקום ספציפי
+    // Place a square/piece at specific position
     void place(size_t x, size_t y, char color, char type);
 
-    // פונקציה זו מקבלת משבצת מוכנה במקום פרמטרים נפרדים
+    // This function receives a ready square instead of separate parameters
     void place(size_t x, size_t y, const Square& square);
 
-    // מחזירה את כל הלוח כמחרוזת אחת בדיוק בפורמט הנדרש
+    // Returns the entire board as a single string in exactly the required format
     std::string toCanonicalString() const;
 
 private:
     size_t width_;
     size_t height_;
 
-    // המיכל בפועל: מערך חד-ממדי רציף בזיכרון ליעילות מטמון מקסימלית
+    // The actual container: a contiguous 1D array for maximum cache efficiency
     std::vector<Square> grid_;
 
-    // פונקציית עזר פנימית לחישוב אינדקס
+    // Internal helper function to calculate index from 2D coordinates
     size_t getIndex(size_t x, size_t y) const;
 };

@@ -10,29 +10,30 @@
 #include "pieces.hpp"
 
 struct EngineConfig {
-    int squareSizePixels = 100;       // גודל משבצת להמרת קליקים
-    uint64_t moveMsPerCell = 500;     // זמן תנועה למשבצת אחת
-    uint64_t jumpDurationMs = 1000;   // זמן שהייה באוויר בקפיצה
+    int squareSizePixels = 100;       // Square size for converting clicks
+    uint64_t moveMsPerCell = 500;     // Movement time per cell
+    uint64_t jumpDurationMs = 1000;   // Air time duration in jump
 };
 
-// עדכון המבנה שישמור גם את המסלול המלא
+// Updated structure to save the full path
 struct PendingMove {
     int startX, startY;
     int destX, destY;
     uint64_t arrivalTime;
     Board::Square piece;
 
-    // שומר את כל המשבצות שהכלי נעל בדרך
+    // Stores all squares the piece traveled through
     std::vector<std::pair<int, int>> path;
 
     bool operator<(const PendingMove& other) const {
         return arrivalTime > other.arrivalTime;
     }
 };
+
 class GameEngine {
 private:
     Board board;
-    EngineConfig config;          // שומרים את ההגדרות במנוע
+    EngineConfig config;        // Store configuration in the engine
 
     uint64_t currentTimeMs;
     std::optional<std::pair<int, int>> selectedSquare;
@@ -46,7 +47,7 @@ private:
     bool isSameColor(Board::Square p1, Board::Square p2) const;
     bool isSquareLocked(int x, int y) const;
 
-    // הפונקציה נכנסה פנימה כדי שתוכל לקרוא את config.moveMsPerCell
+    // Function moved inside so it can read config.moveMsPerCell
     uint64_t calculateArrival(int startX, int startY, int destX, int destY) const;
 
 public:
