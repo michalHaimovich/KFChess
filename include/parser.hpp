@@ -6,6 +6,7 @@
 #include "board.hpp"
 
 // מגדיר את סוגי הפקודות שהמערכת שלנו מכירה
+
 enum class CommandType {
     CLICK,
     WAIT,

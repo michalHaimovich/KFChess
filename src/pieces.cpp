@@ -105,6 +105,17 @@ bool Pawn::isValidMove(int startX, int startY, int destX, int destY, const Board
 
     return false;
 }
+
+void Pawn::onLanding(Board& board, int destX, int destY, char color) const {
+    // החייל בודק אם הוא הגיע לסוף הלוח, ומכתיר את עצמו ישירות על הלוח
+    bool whiteReachedEnd = (color == 'w' && destY == 0);
+    bool blackReachedEnd = (color == 'b' && destY == board.getHeight() - 1);
+
+    if (whiteReachedEnd || blackReachedEnd) {
+        board.place(destX, destY, { color, 'Q' });
+    }
+}
+
 const Piece* PieceFactory::getPiece(char pieceType) {
     // מופעים סטטיים: נוצרים רק פעם אחת בזיכרון (Flyweight)
     static King king;

@@ -2,11 +2,13 @@
 #include "pieces.hpp"
 #include <cmath>
 
-GameEngine::GameEngine(const Board& initialBoard)
-    : board(initialBoard), currentTimeMs(0), selectedSquare(std::nullopt) {
+
+GameEngine::GameEngine(const Board& initialBoard, const EngineConfig& cfg)
+    : board(initialBoard), config(cfg), currentTimeMs(0), selectedSquare(std::nullopt) {
     lockedSquares.resize(board.getHeight(), std::vector<bool>(board.getWidth(), false));
     jumpExpiration.resize(board.getHeight(), std::vector<uint64_t>(board.getWidth(), 0));
 }
+
 bool GameEngine::isSameColor(Board::Square p1, Board::Square p2) const {
     if (p1.type == '\0' || p2.type == '\0') return false;
     return p1.color == p2.color;
@@ -17,23 +19,21 @@ bool GameEngine::isSquareLocked(int x, int y) const {
     return lockedSquares[y][x];
 }
 
-static uint64_t calculateArrival(int startX, int startY, int destX, int destY, uint64_t currentTime) {
+uint64_t GameEngine::calculateArrival(int startX, int startY, int destX, int destY) const {
     int dx = std::abs(destX - startX);
     int dy = std::abs(destY - startY);
-
-    // חישוב מרחק צ'בישב: זמן תנועה באלכסון זהה לזמן תנועה ישר
     int distance = std::max(dx, dy);
 
-    return currentTime + static_cast<uint64_t>(distance * 1000);
+    return currentTimeMs + static_cast<uint64_t>(distance * config.moveMsPerCell);
 }
+
 void GameEngine::handleClick(int pixelX, int pixelY) {
 
     if (isGameOver) {
         return;
     }
-
-    int targetX = pixelX / 100;
-    int targetY = pixelY / 100;
+    int targetX = pixelX / config.squareSizePixels;
+    int targetY = pixelY / config.squareSizePixels;
 
     if (targetX < 0 || targetX >= board.getWidth() || targetY < 0 || targetY >= board.getHeight()) {
         return;
@@ -98,7 +98,7 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
 
                     pendingQueue.push({
                         startX, startY, targetX, targetY,
-                        calculateArrival(startX, startY, targetX, targetY, currentTimeMs),
+                        calculateArrival(startX, startY, targetX, targetY),
                         selectedPiece,
                         movePath // שומרים את המסלול כדי לדעת מה לשחרר ב-wait
                     });
@@ -114,8 +114,8 @@ void GameEngine::handleClick(int pixelX, int pixelY) {
 void GameEngine::handleJump(int pixelX, int pixelY) {
     if (isGameOver) return;
 
-    int targetX = pixelX / 100;
-    int targetY = pixelY / 100;
+    int targetX = pixelX / config.squareSizePixels;
+    int targetY = pixelY / config.squareSizePixels;
 
     if (targetX < 0 || targetX >= board.getWidth() || targetY < 0 || targetY >= board.getHeight()) {
         return;
@@ -130,7 +130,7 @@ void GameEngine::handleJump(int pixelX, int pixelY) {
 
     // אם הכלי לא קופץ כרגע, נפעיל לו קפיצה ל-1000 מילישניות
     if (jumpExpiration[targetY][targetX] <= currentTimeMs) {
-        jumpExpiration[targetY][targetX] = currentTimeMs + 1000;
+        jumpExpiration[targetY][targetX] = currentTimeMs + config.jumpDurationMs;
     }
 
     // אם הכלי שקפץ היה מסומן, נבטל את הסימון (כמו ב-click)
@@ -148,12 +148,11 @@ void GameEngine::wait(uint64_t ms) {
         Board::Square targetSquare = board.at(move.destX, move.destY);
         bool targetIsEnemy = (targetSquare.type != '\0' && targetSquare.color != move.piece.color);
 
-        // --- התוספת לאיטרציה הזו: בדיקת המלכודת של הקפיצה ---
         if (targetIsEnemy && jumpExpiration[move.destY][move.destX] >= move.arrivalTime) {
             // התוקף נפל למלכודת! הכלי שבאוויר אוכל אותו.
 
             // אם התוקף שהושמד הוא במקרה המלך (יצא להתקפה ומת), המשחק נגמר!
-            if (std::toupper(move.piece.type) == 'K') {
+            if (PieceFactory::getPiece(move.piece.type)->isVital()) {
                 isGameOver = true;
             }
 
@@ -163,19 +162,19 @@ void GameEngine::wait(uint64_t ms) {
         else {
             // נחיתה רגילה (אין קפיצה, או שהקפיצה הסתיימה)
 
-            // בדיקת הכתרת חייל (הקוד מהאיטרציה הקודמת)
-            if (std::toupper(move.piece.type) == 'P') {
-                // ...
-            }
+            // אחרי שהנחתנו את הכלי על הלוח ב-wait:
+            board.place(move.destX, move.destY, move.piece);
+            board.place(move.startX, move.startY, { '.', '\0' });
+
+            // אומרים לכלי: "נחתת! תעשה מה שאתה אמור לעשות"
+            PieceFactory::getPiece(move.piece.type)->onLanding(board, move.destX, move.destY, move.piece.color);
 
             // בדיקת Game Over (אם דרסנו מלך נייח)
-            if (targetSquare.type != '\0' && std::toupper(targetSquare.type) == 'K') {
+
+            if (targetSquare.type != '\0' && PieceFactory::getPiece(targetSquare.type)->isVital()) {
                 isGameOver = true;
             }
 
-            // נחיתת הכלי ביעד ומחיקתו מהמקור
-            board.place(move.destX, move.destY, move.piece);
-            board.place(move.startX, move.startY, { '.', '\0' });
         }
 
         // שחרור הנעילות לאורך המסלול (נשאר זהה)
