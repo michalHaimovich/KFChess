@@ -69,37 +69,42 @@ bool Knight::isValidMove(int startX, int startY, int destX, int destY, const Boa
 }
 
 bool Pawn::isValidMove(int startX, int startY, int destX, int destY, const Board& board) const {
-    // 1. קריאת הצבע של החייל מהלוח
     char myColor = board.at(startX, startY).color;
-
-    // קביעת הכיוון (לבן עולה = -1, שחור יורד = 1)
     int forwardDirection = (myColor == 'w') ? -1 : 1;
 
     int dx = destX - startX;
     int dy = destY - startY;
 
-    // החייל (באיטרציה זו) זז אך ורק משבצת אחת קדימה בציר Y
-    if (dy != forwardDirection) {
+    // 1. תנועה ישרה (ללא אכילה)
+    if (dx == 0) {
+        // מקרה א': צעד אחד קדימה
+        if (dy == forwardDirection) {
+            return board.at(destX, destY).type == '\0';
+        }
+
+        // מקרה ב': שני צעדים קדימה (רק מהשורה ההתחלתית)
+        if (dy == 2 * forwardDirection) {
+            bool isWhiteStartRow = (myColor == 'w' && startY >= board.getHeight() - 2);
+            bool isBlackStartRow = (myColor == 'b' && startY <= 1);
+
+            if (isWhiteStartRow || isBlackStartRow) {
+                // חייבים לוודא שגם משבצת הביניים וגם היעד ריקות!
+                bool isIntermediateClear = board.at(startX, startY + forwardDirection).type == '\0';
+                bool isDestClear = board.at(destX, destY).type == '\0';
+
+                return isIntermediateClear && isDestClear;
+            }
+        }
         return false;
     }
 
-    // 2. תנועה ישרה (ללא אכילה)
-    if (dx == 0) {
-        // מותר רק אם היעד ריק לחלוטין
-        return board.at(destX, destY).type == '\0';
-    }
-
-    // 3. תנועה אלכסונית (אכילה)
-    if (std::abs(dx) == 1) {
-        // מותר רק אם יש כלי ביעד (כאמור, ה-GameEngine מוודא שזה אויב)
+    // 2. תנועה אלכסונית (אכילה בלבד)
+    if (std::abs(dx) == 1 && dy == forwardDirection) {
         return board.at(destX, destY).type != '\0';
     }
 
-    // כל ניסיון לתנועה אחרת (כמו תנועה הצידה בשתי משבצות)
     return false;
 }
-// --- מימוש המפעל (PieceFactory) בתבנית Flyweight ---
-
 const Piece* PieceFactory::getPiece(char pieceType) {
     // מופעים סטטיים: נוצרים רק פעם אחת בזיכרון (Flyweight)
     static King king;

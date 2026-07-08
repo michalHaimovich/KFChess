@@ -30,6 +30,13 @@ int main() {
                 engine.printSettledBoard();
                 break;
 
+                // --- התוספת שלנו: טיפול בפקודת הקפיצה ---
+            case CommandType::JUMP:
+                // arg1 = x, arg2 = y
+                engine.handleJump(cmd.arg1, cmd.arg2);
+                break;
+                // ----------------------------------------
+
             case CommandType::UNKNOWN:
                 // פקודה משובשת או לא מוכרת - מתעלמים בבטחה
                 break;

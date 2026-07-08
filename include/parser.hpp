@@ -10,7 +10,8 @@ enum class CommandType {
     CLICK,
     WAIT,
     PRINT_BOARD,
-    UNKNOWN
+    UNKNOWN,
+    JUMP
 };
 
 // מבנה נתונים שמייצג פקודה מוכנה לפעולה (אחרי שחולצה מהטקסט)

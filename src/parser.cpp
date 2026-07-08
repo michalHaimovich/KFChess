@@ -68,6 +68,20 @@ GameCommand Parser::parseCommandString(const std::string& line) {
             }
         }
     }
+    else if (tokens[0] == "jump") {
+        if (tokens.size() >= 3) {
+            cmd.type = CommandType::JUMP;
+            try {
+                cmd.arg1 = std::stoi(tokens[1]); // x
+                cmd.arg2 = std::stoi(tokens[2]); // y
+            }
+            catch (...) {
+                cmd.type = CommandType::UNKNOWN;
+            }
+        }
+    }
+    // ----------------------------------------
+ 
     // ניתוח פקודת wait
     else if (tokens[0] == "wait") {
         if (tokens.size() >= 2) {
